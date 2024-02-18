@@ -125,11 +125,8 @@ async function scrapeData() {
       } else {
         value = parseFloat(value);
       }
-      if (chemName === "Ozone") {
-        console.log("Ozone", value, "Units: " + units);
-      }
-      if (value === units) {
-        console.log("Value not found for", chemName);
+      if (i == 1) {
+        console.log(value, units, chemName, chemCode);
       }
       await fs.appendFile(
         "environmentalData.txt",
