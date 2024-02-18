@@ -56,9 +56,7 @@ async function scrapeData() {
         rows.forEach((row) => {
           const chemCode = row.querySelector("td:nth-child(2)").innerText;
           const chemName = row.querySelector("td:nth-child(3)").innerText;
-          const value = Number(
-            row.querySelector("td:nth-child(5)").innerText.split(" ")[0]
-          );
+          const value = row.querySelector("td:nth-child(5)").innerText;
           const units = row.querySelector("td:nth-child(6)").innerText;
           data.push({
             chemCode,
@@ -95,7 +93,6 @@ async function scrapeData() {
       });
 
       if (!isPaginationDone) {
-        console.log("\nHere\n\n\n");
         await wait(1000);
         const newData = await extractDataFromPage();
         results = results.concat(newData);
@@ -104,13 +101,53 @@ async function scrapeData() {
     }
 
     const firstPageData = await extractDataFromPage();
-    console.log("Extracted data from the first page", firstPageData);
     results = results.concat(firstPageData);
     await handlePagination();
 
+    console.log("length of results", results.length);
+
     await fs.writeFile(
-      "environmentalData.js",
-      `export default ${JSON.stringify(results, null, 2)};`,
+      "environmentalData.txt",
+      `const ESDATStandard = `,
+      "utf-8"
+    );
+    let i = 0;
+    while (i < results.length) {
+      let { chemCode, chemName, value, units } = results[i];
+      if (value === units) {
+        value = -999; //!! -999 mean no limit set
+      } else if (chemName.includes("pH")) {
+        values = value.split(" ");
+        value = {
+          min: Number(values[0]),
+          max: Number(values[2]),
+        };
+      } else {
+        value = parseFloat(value);
+      }
+      if (chemName === "Ozone") {
+        console.log("Ozone", value, "Units: " + units);
+      }
+      if (value === units) {
+        console.log("Value not found for", chemName);
+      }
+      await fs.appendFile(
+        "environmentalData.txt",
+        `{
+          chemCode: "${chemCode}",
+          chemName: "${chemName}",
+          value: ${value},
+          units: "${units}",
+        },
+        `,
+        "utf-8"
+      );
+      i++;
+    }
+    await fs.appendFile(
+      "environmentalData.txt",
+      `];
+      `,
       "utf-8"
     );
     console.log("Data extraction complete and saved to file.");
