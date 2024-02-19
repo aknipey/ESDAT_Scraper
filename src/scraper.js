@@ -18,20 +18,28 @@ async function scrapeData() {
 
     await page.click("ul > li:first-child .k-icon.k-i-expand");
 
-    const nthListItemSelector = `ul > li:nth-child(2) .k-icon.k-i-expand`;
+    //! Modify here for different standards
+    const nthListItemSelector = `ul > li:nth-child(5) .k-icon.k-i-expand`;
     await page.waitForSelector(nthListItemSelector, { visible: true });
     await page.click(nthListItemSelector);
 
     await wait(1000); // Waits for animations or data loading
-    await page.mouse.click(312, 185, { clickCount: 2 });
+    await page.mouse.click(290, 261, { clickCount: 1 });
 
+    await wait(1000); // Waits for animations or data loading
+    await page.mouse.click(307, 299, { clickCount: 1 });
+
+    await wait(1000); // Waits for animations or data loading
+    await page.mouse.click(340, 360, { clickCount: 1 });
+
+    //! Do not modify below
     await wait(1000); // Waits for the search results to load
     await page.mouse.click(26, 781, { clickCount: 1 });
 
     await wait(1000); // Waits to submit the search
     await page.mouse.click(748, 110, { clickCount: 1 });
 
-    await wait(1000); // Additional wait to ensure everything has loaded
+    await wait(2000); // Additional wait to ensure everything has loaded
 
     let results = [];
     async function extractDataFromPage() {
@@ -44,12 +52,14 @@ async function scrapeData() {
           const value = row.querySelector("td:nth-child(5)").innerText;
           const units = row.querySelector("td:nth-child(6)").innerText;
           const comments = row.querySelector("td:nth-child(8)").innerText;
+          const conditions = row.querySelector("td:nth-child(11)").innerText;
           data.push({
             chemCode,
             chemName,
             value,
             units,
             comments,
+            conditions,
           });
         });
         return data;
@@ -91,7 +101,7 @@ async function scrapeData() {
     results = results.concat(firstPageData);
     await handlePagination();
 
-    console.log("length of results", results.length);
+    console.log("length of results:", results.length);
 
     await fs.writeFile(
       "environmentalData.txt",
@@ -100,8 +110,9 @@ async function scrapeData() {
     );
     let i = 0;
     while (i < results.length) {
-      let { chemCode, chemName, value, units, comments } = results[i];
-      if (value === units) {
+      let { chemCode, chemName, value, units, comments, conditions } =
+        results[i];
+      if (value === units || value.substring(0, 2) === "NL") {
         value = -999; //!! -999 mean no limit set
       } else if (chemName === "pH") {
         values = value.split(" ");
@@ -125,6 +136,7 @@ async function scrapeData() {
           value: ${value},
           units: "${units}",
           comments: "${comments}",
+          ${conditions ? "conditions: " + '"' + conditions + '",' : ""}
         },
         `,
         "utf-8"
