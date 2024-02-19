@@ -19,18 +19,17 @@ async function scrapeData() {
     await page.click("ul > li:first-child .k-icon.k-i-expand");
 
     //! Modify here for different standards
-    const nthListItemSelector = `ul > li:nth-child(5) .k-icon.k-i-expand`;
-    await page.waitForSelector(nthListItemSelector, { visible: true });
-    await page.click(nthListItemSelector);
+    await wait(1000); // Waits for animations or data loading
+    await page.mouse.click(273, 262, { clickCount: 1 });
 
     await wait(1000); // Waits for animations or data loading
-    await page.mouse.click(290, 261, { clickCount: 1 });
+    await page.mouse.click(290, 282, { clickCount: 1 });
 
     await wait(1000); // Waits for animations or data loading
-    await page.mouse.click(307, 299, { clickCount: 1 });
+    await page.mouse.click(323, 366, { clickCount: 1 });
 
-    await wait(1000); // Waits for animations or data loading
-    await page.mouse.click(340, 360, { clickCount: 1 });
+    // await wait(1000); // Waits for animations or data loading
+    // await page.mouse.click(320, 480, { clickCount: 1 });
 
     //! Do not modify below
     await wait(1000); // Waits for the search results to load
@@ -120,7 +119,7 @@ async function scrapeData() {
           min: ${Number(values[0])},
           max: ${Number(values[2])},
         }`;
-      } else if (value.split(" ")[0] === ">") {
+      } else if (value.split(" ")[0] === ">" || value.split(" ")[0] === "<") {
         value = value.split(" ")[1];
       } else {
         value = parseFloat(value);
