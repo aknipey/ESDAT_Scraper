@@ -6,45 +6,30 @@ function wait(ms) {
 }
 
 async function scrapeData() {
-  // Launch the browser and open a new blank page
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
 
   try {
-    // Navigate the page to a URL
     await page.goto("https://online.esdat.net/EnvironmentalStandards");
-
-    // Set screen size
     await page.setViewport({ width: 1020, height: 800 });
 
-    // Click on the div to trigger the appearance of the dropdown
     await page.click("div#environmental-standards-selector");
-
-    // Wait for the first list item to appear
     await page.waitForSelector("ul > li:first-child .k-icon.k-i-expand");
 
-    // Click on the icon within the first list item
     await page.click("ul > li:first-child .k-icon.k-i-expand");
-    console.log("Clicked on the first item");
 
-    const nthListItemSelector = `ul > li:nth-child(1) .k-icon.k-i-expand`;
+    const nthListItemSelector = `ul > li:nth-child(2) .k-icon.k-i-expand`;
     await page.waitForSelector(nthListItemSelector, { visible: true });
-
-    // Click on the icon within the nth list item
     await page.click(nthListItemSelector);
-    console.log(`Clicked on the 5th item`);
 
     await wait(1000); // Waits for animations or data loading
-    await page.mouse.click(309, 182, { clickCount: 2 });
+    await page.mouse.click(312, 185, { clickCount: 2 });
 
     await wait(1000); // Waits for the search results to load
     await page.mouse.click(26, 781, { clickCount: 1 });
 
     await wait(1000); // Waits to submit the search
     await page.mouse.click(748, 110, { clickCount: 1 });
-
-    console.log("Clicked on the target element");
-    console.log("Page opened");
 
     await wait(1000); // Additional wait to ensure everything has loaded
 
@@ -58,11 +43,13 @@ async function scrapeData() {
           const chemName = row.querySelector("td:nth-child(3)").innerText;
           const value = row.querySelector("td:nth-child(5)").innerText;
           const units = row.querySelector("td:nth-child(6)").innerText;
+          const comments = row.querySelector("td:nth-child(8)").innerText;
           data.push({
             chemCode,
             chemName,
             value,
             units,
+            comments,
           });
         });
         return data;
@@ -108,24 +95,26 @@ async function scrapeData() {
 
     await fs.writeFile(
       "environmentalData.txt",
-      `const ESDATStandard = `,
+      `const ESDATStandard = [`,
       "utf-8"
     );
     let i = 0;
     while (i < results.length) {
-      let { chemCode, chemName, value, units } = results[i];
+      let { chemCode, chemName, value, units, comments } = results[i];
       if (value === units) {
         value = -999; //!! -999 mean no limit set
-      } else if (chemName.includes("pH")) {
+      } else if (chemName === "pH") {
         values = value.split(" ");
-        value = {
-          min: Number(values[0]),
-          max: Number(values[2]),
-        };
+        value = `{
+          min: ${Number(values[0])},
+          max: ${Number(values[2])},
+        }`;
+      } else if (value.split(" ")[0] === ">") {
+        value = value.split(" ")[1];
       } else {
         value = parseFloat(value);
       }
-      if (i == 1) {
+      if (isNaN(value)) {
         console.log(value, units, chemName, chemCode);
       }
       await fs.appendFile(
@@ -135,6 +124,7 @@ async function scrapeData() {
           chemName: "${chemName}",
           value: ${value},
           units: "${units}",
+          comments: "${comments}",
         },
         `,
         "utf-8"
@@ -143,7 +133,7 @@ async function scrapeData() {
     }
     await fs.appendFile(
       "environmentalData.txt",
-      `];
+      `],
       `,
       "utf-8"
     );
